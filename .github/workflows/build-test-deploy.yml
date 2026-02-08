@@ -1,67 +1,64 @@
-name: build-test-deploy
-on: push
-jobs: 
+name: build-deploy
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
   build:
     runs-on: ubuntu-latest
-    steps: 
-      - name: checkout repo
+    steps:
+      - name: Checkout repo
         uses: actions/checkout@v3
-      - name: use node.js
+
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
-      - run: npm install
-      - run: npm run build 
-  test: 
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+  deploy:
     needs: build
     runs-on: ubuntu-latest
-    steps: 
-      - name: checkout repo
-        uses: actions/checkout@v3
-      - name: use node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-      - run: npm install
-      - run: npm test
-  deploy:
-    
-
-    permissions:
-      contents: write
-      pages: write     
-      id-token: write  
-
     environment:
       name: production
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
+      url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - name: checkout repo
+      - name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: use node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
-      
-      - name: configure github pages
+          node-version: 20
+
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v3
         with:
           static_site_generator: next
 
-      - run: npm install
-      - run: npm run build
+      - name: Install dependencies
+        run: npm ci
 
-      - name: upload artifacts
+      - name: Build project
+        run: npm run build
+
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v1
-        with: 
-          path: "./out"
+        with:
+          path: out
 
-      - name: deploy
-        id: deployment
-        uses: actions/deploy-pages@v1  
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v1
